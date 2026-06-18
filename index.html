@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>記録カレンダー</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23e8f4e8'/><path d='M50 75 C50 75 50 52 50 44' stroke='%236aaa6a' stroke-width='5' stroke-linecap='round'/><path d='M50 55 C50 55 36 49 28 35 C38 33 50 44 50 55Z' fill='%2388c488'/><path d='M50 46 C50 46 64 40 72 26 C62 24 50 35 50 46Z' fill='%23aad4aa'/><ellipse cx='50' cy='79' rx='10' ry='4' fill='%23c8b89a' opacity='0.5'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      background: #f7f4ef;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px 16px 40px;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      padding: 0 4px;
+    }
+
+    .app-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(145deg, #f5f0e8, #e8dfd0);
+      border: 0.5px solid #d4c9b0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .month-nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 0.5px solid #ddd;
+      background: #fff;
+      cursor: pointer;
+      font-size: 18px;
+      color: #888;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+      line-height: 1;
+    }
+
+    .nav-btn:hover { background: #f5f5f5; }
+    .nav-btn:disabled { opacity: 0.25; cursor: default; }
+
+    .month-label {
+      font-size: 16px;
+      font-weight: 700;
+      color: #333;
+      min-width: 90px;
+      text-align: center;
+    }
+
+    .cal {
+      background: #fff;
+      border-radius: 22px;
+      border: 0.5px solid #e8e4de;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.05);
+    }
+
+    .wrow {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      margin-bottom: 6px;
+    }
+
+    .wd {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 500;
+      color: #bbb;
+      padding: 3px 0;
+    }
+
+    .wd:first-child { color: #d95f5f; }
+    .wd:last-child  { color: #5577cc; }
+
+    .dgrid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+    }
+
+    .dc {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 11px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.1s, transform 0.1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .dc.empty, .dc.future { cursor: default; }
+    .dc.future { opacity: 0.3; }
+    .dc:not(.empty):not(.future):hover { background: #f5f2ed; }
+    .dc:not(.empty):not(.future):active { transform: scale(0.88); }
+
+    .dn {
+      font-size: 12px;
+      font-weight: 500;
+      color: #888;
+      line-height: 1;
+    }
+
+    .dc.sun .dn { color: #d95f5f; }
+    .dc.sat .dn { color: #5577cc; }
+    .dc.today .dn { color: #b07828; font-weight: 700; }
+
+    .tdot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #b07828;
+      margin-top: 2px;
+    }
+
+    .stamp {
+      font-size: 20px;
+      line-height: 1;
+      animation: pop .22s cubic-bezier(.34,1.56,.64,1);
+    }
+
+    @keyframes pop {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+
+    .sumcard {
+      background: #fff;
+      border-radius: 18px;
+      border: 0.5px solid #e8e4de;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+
+    .slim { font-size: 12px; color: #aaa; margin-bottom: 2px; }
+
+    .sbig {
+      font-size: 26px;
+      font-weight: 700;
+      color: #333;
+    }
+
+    .sbig span { font-size: 14px; font-weight: 400; color: #999; }
+
+    .badge {
+      background: #fdf3e7;
+      border: 0.5px solid #e0c99a;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px;
+      color: #9a6520;
+      font-weight: 500;
+    }
+
+    .note {
+      text-align: center;
+      font-size: 11px;
+      color: #bbb;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="month-nav">
+      <button class="nav-btn" id="prev">‹</button>
+      <div class="month-label" id="mlabel"></div>
+      <button class="nav-btn" id="next">›</button>
+    </div>
+  </div>
+
+  <div class="cal">
+    <div class="wrow">
+      <div class="wd">日</div><div class="wd">月</div><div class="wd">火</div>
+      <div class="wd">水</div><div class="wd">木</div><div class="wd">金</div><div class="wd">土</div>
+    </div>
+    <div class="dgrid" id="grid"></div>
+  </div>
+
+  <div class="sumcard">
+    <div>
+      <div class="slim">今月の記録</div>
+      <div class="sbig"><span id="cnt">0</span> <span>回</span></div>
+    </div>
+    <div class="badge" id="streak">🔥 連続 0 日</div>
+  </div>
+
+  <div class="note">タップで ⭐️ → ☆ → 消去</div>
+</div>
+
+<script>
+  const SKEY = 'star_v1';
+  let records = {};
+  try { const s = localStorage.getItem(SKEY); if (s) records = JSON.parse(s); } catch(e) {}
+
+  function save() {
+    try { localStorage.setItem(SKEY, JSON.stringify(records)); } catch(e) {}
+  }
+
+  const now = new Date();
+  const todayStr = fmt(now.getFullYear(), now.getMonth(), now.getDate());
+  let vy = now.getFullYear(), vm = now.getMonth();
+  const minDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+  function fmt(y, m, d) {
+    return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
+
+  function render() {
+    document.getElementById('mlabel').textContent = `${vy}年${vm+1}月`;
+    const atMin = vy === minDate.getFullYear() && vm === minDate.getMonth();
+    const atNow = vy === now.getFullYear() && vm === now.getMonth();
+    document.getElementById('prev').disabled = atMin;
+    document.getElementById('next').disabled = atNow;
+
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+    const fd = new Date(vy, vm, 1).getDay();
+    const dim = new Date(vy, vm + 1, 0).getDate();
+
+    for (let i = 0; i < fd; i++) {
+      const e = document.createElement('div');
+      e.className = 'dc empty';
+      grid.appendChild(e);
+    }
+
+    for (let d = 1; d <= dim; d++) {
+      const key = fmt(vy, vm, d);
+      const dow = (fd + d - 1) % 7;
+      const isToday = key === todayStr;
+      const isFuture = key > todayStr;
+      const cell = document.createElement('div');
+      let c = 'dc';
+      if (dow === 0) c += ' sun';
+      if (dow === 6) c += ' sat';
+      if (isToday) c += ' today';
+      if (isFuture) c += ' future';
+      cell.className = c;
+
+      if (records[key] === 1) {
+        cell.innerHTML = '<div class="stamp">⭐️</div>';
+      } else if (records[key] === 2) {
+        cell.innerHTML = '<div class="stamp">☆</div>';
+      } else if (isToday) {
+        cell.innerHTML = `<div class="dn">${d}</div><div class="tdot"></div>`;
+      } else {
+        cell.innerHTML = `<div class="dn">${d}</div>`;
+      }
+
+      if (!isFuture) {
+        cell.addEventListener('click', () => {
+          const cur = records[key] || 0;
+          const next = (cur + 1) % 3;
+          if (next === 0) delete records[key]; else records[key] = next;
+          save();
+          render();
+        });
+      }
+      grid.appendChild(cell);
+    }
+
+    let cnt = 0;
+    for (let d = 1; d <= dim; d++) if (records[fmt(vy, vm, d)]) cnt++;
+    document.getElementById('cnt').textContent = cnt;
+
+    let streak = 0, cur = new Date(now);
+    for (let i = 0; i < 400; i++) {
+      const k = fmt(cur.getFullYear(), cur.getMonth(), cur.getDate());
+      if (records[k]) { streak++; cur.setDate(cur.getDate() - 1); } else break;
+    }
+    document.getElementById('streak').textContent = `🔥 連続 ${streak} 日`;
+  }
+
+  document.getElementById('prev').addEventListener('click', () => {
+    vm--; if (vm < 0) { vm = 11; vy--; } render();
+  });
+  document.getElementById('next').addEventListener('click', () => {
+    vm++; if (vm > 11) { vm = 0; vy++; } render();
+  });
+
+  render();
+</script>
+</body>
+</html>
